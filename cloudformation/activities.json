@@ -1,0 +1,14 @@
+{
+  "table": "activities",
+  "operation": "Insert",
+  "data": {
+    "msisdn": "8801714606632",
+    "activity": "USSD_BROWSING",
+    "channel": "USSD",
+    "activitycode": "USSD_DISENROLL_VISIT",
+    "activityinfo": {},
+    "activitytime": "2017-05-13 23:07:35",
+    "service_name": "USSD"
+  },
+  "application": "core.db"
+}

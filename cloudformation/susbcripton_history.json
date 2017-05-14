@@ -1,0 +1,14 @@
+{
+  "table": "subscription_history",
+  "operation": "Insert",
+  "data": {
+    "membership_no": "T-1701068742-1",
+    "status": "Unsubscribed",
+    "channel": "USSD",
+    "updatedon": "2017-05-13 23:07:29",
+    "prev": "TonicBasic",
+    "current": "NonMember"
+  },
+  "application": "core.db"
+}
+
