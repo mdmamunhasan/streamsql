@@ -62,7 +62,7 @@ object MainSparkStreaming {
       import spark.implicits._
       // Convert RDD[String] to RDD[case class] to DataFrame
 
-      val messagesDataFrame = rdd.map(_.split(",")).map(w => MemberRecord(w(0), w(1), w(2), w(3), w(4), w(5), w(6))).toDF()
+      val messagesDataFrame = rdd.map(_.split(",")).map(w => RetailerRecord(w(0), w(1), w(2), w(3), w(4), w(5), w(6))).toDF()
 
       // Creates a temporary view using the DataFrame
       messagesDataFrame.createOrReplaceTempView("csmessages")
@@ -85,4 +85,4 @@ object MainSparkStreaming {
 }
 
 /** Case class for converting RDD to DataFrame */
-case class MemberRecord(retailernumber: String, retailer_type: String, msisdn: String, requested_package: String, invitedon: String, status: String, invite_type: String)
+case class RetailerRecord(retailernumber: String, retailer_type: String, msisdn: String, requested_package: String, invitedon: String, status: String, invite_type: String)
