@@ -2,6 +2,7 @@
 
 1) Maven
 2) Apache Spark
+3) Scala
 
 ## Clone the repo
 
