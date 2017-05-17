@@ -65,7 +65,7 @@ object MainSparkStreaming {
       //var z:Array[String] = new RDD[Map[String]]
 
       val messagesDataFrame = rdd.map(json => JSON.parseFull(json).get.asInstanceOf[Map[String, Any]])
-      messagesDataFrame.collect().foreach(println)
+      //messagesDataFrame.collect().foreach(println)
 
       // Creates a retailer DataFrame
       val retailerDataFrame = messagesDataFrame.filter(_ ("table") == "retailer_invites")
