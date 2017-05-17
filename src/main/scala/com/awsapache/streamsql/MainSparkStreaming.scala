@@ -6,6 +6,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
 import org.apache.spark.streaming.kafka._
 import org.apache.spark.streaming.{Seconds, StreamingContext, Time}
+import scala.util.parsing.json._
 
 
 object MainSparkStreaming {
@@ -27,7 +28,7 @@ object MainSparkStreaming {
 
     val sparkConf = new SparkConf().setAppName("DirectKafkaActivities")
     // Create context with 10 second batch interval
-    val ssc = new StreamingContext(sparkConf, Seconds(10))
+    val ssc = new StreamingContext(sparkConf, Seconds(20))
 
     // Create direct kafka stream with brokers and topics
     val topicsSet = topics.split(",").toSet
@@ -55,24 +56,31 @@ object MainSparkStreaming {
 
     // Create the tables to store your streams 
     spark.sql("CREATE TABLE retailer_invites_hive_table ( retailernumber string, retailer_type string, msisdn string, requested_package string, invitedon string, status string, invite_type string ) STORED AS TEXTFILE")
-
     // Convert RDDs of the lines DStream to DataFrame and run SQL query
     lines.foreachRDD { (rdd: RDD[String], time: Time) =>
 
       import spark.implicits._
       // Convert RDD[String] to RDD[case class] to DataFrame
 
-      val messagesDataFrame = rdd.map(_.split(",")).map(w => RetailerRecord(w(0), w(1), w(2), w(3), w(4), w(5), w(6))).toDF()
+      //var z:Array[String] = new RDD[Map[String]]
+
+      val messagesDataFrame = rdd.map(json => JSON.parseFull(json).get.asInstanceOf[Map[String, Any]])
+      messagesDataFrame.collect().foreach(println)
+
+      // Creates a retailer DataFrame
+      val retailerDataFrame = messagesDataFrame.filter(_ ("table") == "retailer_invites")
+        .filter(_ ("operation") == "Insert").map(m => m("data").asInstanceOf[Map[String, String]])
+        .map(w => RetailerRecord(w("retailernumber"), w("retailer_type"), w("msisdn"), w("requested_package"), w("invitedon"), w("status"), w("invite_type")))
+        .toDF()
 
       // Creates a temporary view using the DataFrame
-      messagesDataFrame.createOrReplaceTempView("csmessages")
+      retailerDataFrame.createOrReplaceTempView("retailer_invites_messages")
 
       //Insert continuous streams into hive table
-      spark.sql("insert into table retailer_invites_hive_table select * from csmessages")
+      spark.sql("insert into table retailer_invites_hive_table select * from retailer_invites_messages")
 
       // select the parsed messages from table using SQL and print it (since it runs on drive display few records)
-      val messagesqueryDataFrame =
-        spark.sql("select * from csmessages")
+      val messagesqueryDataFrame = spark.sql("select * from retailer_invites_messages")
       println(s"========= $time =========")
       messagesqueryDataFrame.show()
     }
