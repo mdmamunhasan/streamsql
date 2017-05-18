@@ -4,6 +4,7 @@ import kafka.serializer.StringDecoder
 import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SparkSession
+import org.apache.spark.sql.SQLContext
 import org.apache.spark.streaming.kafka._
 import org.apache.spark.streaming.{Seconds, StreamingContext, Time}
 import scala.util.parsing.json._
@@ -43,6 +44,8 @@ object MainSparkStreaming {
     val lines = messages.map(_._2)
 
     val warehouseLocation = "file:${system:user.dir}/spark-warehouse"
+
+    SQLContext(ssc)
 
     val spark = SparkSession
       .builder

@@ -187,5 +187,8 @@
     <orderEntry type="library" name="Maven: org.apache.zookeeper:zookeeper:3.4.6" level="project" />
     <orderEntry type="library" name="Maven: org.apache.spark:spark-streaming-kafka_2.11:1.6.2" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: junit:junit:3.8.1" level="project" />
+    <orderEntry type="library" name="Maven: com.databricks:spark-redshift_2.11:3.0.0-preview1" level="project" />
+    <orderEntry type="library" name="Maven: com.eclipsesource.minimal-json:minimal-json:0.9.4" level="project" />
+    <orderEntry type="library" name="Maven: com.databricks:spark-avro_2.11:3.0.0" level="project" />
   </component>
 </module>
