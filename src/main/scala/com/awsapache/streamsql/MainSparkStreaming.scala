@@ -45,8 +45,6 @@ object MainSparkStreaming {
 
     val warehouseLocation = "file:${system:user.dir}/spark-warehouse"
 
-    SQLContext(ssc)
-
     val spark = SparkSession
       .builder
       .config(sparkConf)
