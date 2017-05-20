@@ -29,7 +29,7 @@ object MainSparkStreaming {
     val Array(brokers, topics, redshifthost, database, db_user, db_password) = args
 
     val jdbcURL = "jdbc:redshift://"+redshifthost+"/"+database+"?user="+db_user+"&password="+db_password
-    val tempS3Dir = "s3n://redshift-temp-spark/data"
+    val tempS3Dir = "s3://redshift-temp-spark/data"
 
     val sparkConf = new SparkConf().setAppName("DirectKafkaActivities")
     // Create context with 10 second batch interval
