@@ -29,7 +29,9 @@ object MainSparkStreaming {
     val Array(brokers, topics, redshifthost, database, db_user, db_password) = args
 
     val jdbcURL = "jdbc:redshift://"+redshifthost+"/"+database+"?user="+db_user+"&password="+db_password
-    val tempS3Dir = "s3n://redshift-temp-spark/data"
+    val tempS3Dir = "s3n://redshift-temp-spark/data/"
+
+    println(jdbcURL)
 
     val sparkConf = new SparkConf().setAppName("DirectKafkaActivities")
     // Create context with 10 second batch interval
@@ -62,16 +64,16 @@ object MainSparkStreaming {
     //spark.sparkContext.hadoopConfiguration.set("fs.s3n.awsAccessKeyId", "AKIAJFDJF2NLFLHTWFPA")
     //spark.sparkContext.hadoopConfiguration.set("fs.s3n.awsSecretAccessKey", "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")
 
-    val eventsDF = spark.read
+    /*val eventsDF = spark.read
       .format("com.databricks.spark.redshift")
       .option("url", jdbcURL)
       .option("tempdir", tempS3Dir)
       .option("dbtable", "retailer_invites")
-      .option("aws_iam_role", "arn:aws:iam::067811574341:role/redshift-s3-fullaccess")
+      .option("aws_iam_role", "arn:aws:iam::067811574341:role/s3access")
       .load()
 
     eventsDF.show()
-    eventsDF.printSchema()
+    eventsDF.printSchema()*/
 
     // Drop the tables if it already exists 
     //spark.sql("DROP TABLE IF EXISTS retailer_invites_hive_table")
@@ -106,7 +108,7 @@ object MainSparkStreaming {
         .option("url", jdbcURL)
         .option("tempdir", tempS3Dir)
         .option("dbtable", "retailer_invites")
-        .option("aws_iam_role", "arn:aws:iam::067811574341:role/s3access")
+        .option("aws_iam_role", "arn:aws:iam::067811574341:role/redshift-s3-fullaccess")
         .mode("error")
         .save()*/
 
