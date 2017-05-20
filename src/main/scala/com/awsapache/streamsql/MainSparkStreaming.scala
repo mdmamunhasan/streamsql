@@ -59,8 +59,8 @@ object MainSparkStreaming {
     //spark.conf.set("fs.s3.awsSecretAccessKey", "tbHiX0aYmkVpcVdDGxCOsHoLJ3eIfQBsoQLyZ8LW")
 
     spark.sparkContext.hadoopConfiguration.set("fs.s3.impl", "org.apache.hadoop.fs.s3native.NativeS3FileSystem")
-    spark.sparkContext.hadoopConfiguration.set("fs.s3.awsAccessKeyId", "")
-    spark.sparkContext.hadoopConfiguration.set("fs.s3.awsSecretAccessKey", "")
+    spark.sparkContext.hadoopConfiguration.set("fs.s3.awsAccessKeyId", sys.env("AWS_ACCESS_KEY_ID"))
+    spark.sparkContext.hadoopConfiguration.set("fs.s3.awsSecretAccessKey", sys.env("AWS_SECRET_ACCESS_KEY"))
 
     val eventsDF = spark.read
       .format("com.databricks.spark.redshift")
@@ -69,7 +69,7 @@ object MainSparkStreaming {
       //.option("temporary_aws_session_token", "")
       .option("url", jdbcURL)
       .option("dbtable", "retailer_invites")
-      //.option("aws_iam_role", "")
+      //.option("aws_iam_role", sys.env("AWS_IAM_ROLE"))
       .option("forward_spark_s3_credentials", true)
       .option("tempdir", tempS3Dir)
       .load()
