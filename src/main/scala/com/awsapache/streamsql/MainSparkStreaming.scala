@@ -6,7 +6,6 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{SaveMode, SparkSession}
 import org.apache.spark.streaming.kafka._
 import org.apache.spark.streaming.{Seconds, StreamingContext, Time}
-
 import scala.util.parsing.json._
 
 
@@ -67,8 +66,8 @@ object MainSparkStreaming {
       .option("url", jdbcURL)
       .option("tempdir", tempS3Dir)
       .option("dbtable", "retailer_invites")
-      .option("aws_iam_role", "arn:aws:iam::067811574341:role/redshift-s3-fullaccess")
-      //.option("aws_iam_role", "arn:aws:iam::067811574341:role/s3access")
+      //.option("aws_iam_role", "arn:aws:iam::067811574341:role/redshift-s3-fullaccess")
+      .option("aws_iam_role", "arn:aws:iam::067811574341:role/s3access")
       .load()
 
     eventsDF.show()
