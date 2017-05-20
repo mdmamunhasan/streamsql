@@ -67,7 +67,7 @@ object MainSparkStreaming {
       .option("url", jdbcURL)
       .option("tempdir", tempS3Dir)
       .option("dbtable", "retailer_invites")
-      .option("aws_iam_role", "arn:aws:iam::067811574341:role/s3access")
+      .option("aws_iam_role", "arn:aws:iam::067811574341:role/redshift-s3-fullaccess")
       .load()
 
     eventsDF.show()
@@ -101,14 +101,14 @@ object MainSparkStreaming {
       //Insert continuous streams into hive table
       //spark.sql("insert into table retailer_invites_hive_table select * from retailer_invites_messages")
       //spark.sql("insert into table retailer_invites(retailernumber, retailer_type, msisdn, requested_package, invitedon, status, invite_type) select * from retailer_invites_messages")
-      spark.sql("insert into table retailer_invites(retailernumber, retailer_type, msisdn, requested_package, invitedon, status, invite_type) select * from retailer_invites_messages")
+      /*spark.sql("insert into table retailer_invites(retailernumber, retailer_type, msisdn, requested_package, invitedon, status, invite_type) select * from retailer_invites_messages")
         .write.format("com.databricks.spark.redshift")
         .option("url", jdbcURL)
         .option("tempdir", tempS3Dir)
         .option("dbtable", "retailer_invites")
         .option("aws_iam_role", "arn:aws:iam::067811574341:role/s3access")
-        .mode(SaveMode.Overwrite)
-        .save()
+        .mode("error")
+        .save()*/
 
       // select the parsed messages from table using SQL and print it (since it runs on drive display few records)
       val messagesqueryDataFrame = spark.sql("select * from retailer_invites_messages")
