@@ -14,7 +14,7 @@ object MainSparkStreaming {
 
   def main(args: Array[String]) {
 
-    if (args.length < 3) {
+    if (args.length < 6) {
       System.err.println(
         s"""
            |Usage: MainSparkStreaming <brokers> <topics>
@@ -26,9 +26,10 @@ object MainSparkStreaming {
       System.exit(1)
     }
 
-    val tempS3Dir = "s3n://redshift-temp-spark/data"
+    val Array(brokers, topics, redshifthost, database, db_user, db_password) = args
 
-    val Array(brokers, topics, jdbcURL, tempS3Dir) = args
+    val jdbcURL = "jdbc:redshift://"+redshifthost+"/"+database+"?user="+db_user+"&password="+db_password
+    val tempS3Dir = "s3n://redshift-temp-spark/data"
 
     val sparkConf = new SparkConf().setAppName("DirectKafkaActivities")
     // Create context with 10 second batch interval
