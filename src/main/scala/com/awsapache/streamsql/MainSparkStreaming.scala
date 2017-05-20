@@ -58,19 +58,19 @@ object MainSparkStreaming {
     //spark.conf.set("fs.s3.awsAccessKeyId", "AKIAIGK6SZDTNZVH3KEA")
     //spark.conf.set("fs.s3.awsSecretAccessKey", "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")
 
-    //spark.sparkContext.hadoopConfiguration.set("fs.s3.impl", "org.apache.hadoop.fs.s3native.NativeS3FileSystem")
-    //spark.sparkContext.hadoopConfiguration.set("fs.s3.awsAccessKeyId", "AKIAJFDJF2NLFLHTWFPA")
-    //spark.sparkContext.hadoopConfiguration.set("fs.s3.awsSecretAccessKey", "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")
+    spark.sparkContext.hadoopConfiguration.set("fs.s3.impl", "org.apache.hadoop.fs.s3native.NativeS3FileSystem")
+    spark.sparkContext.hadoopConfiguration.set("fs.s3.awsAccessKeyId", "")
+    spark.sparkContext.hadoopConfiguration.set("fs.s3.awsSecretAccessKey", "")
 
     val eventsDF = spark.read
       .format("com.databricks.spark.redshift")
-      .option("temporary_aws_access_key_id", "")
-      .option("temporary_aws_secret_access_key", "")
-      .option("temporary_aws_session_token", "")
+      //.option("temporary_aws_access_key_id", "")
+      //.option("temporary_aws_secret_access_key", "")
+      //.option("temporary_aws_session_token", "")
       .option("url", jdbcURL)
       .option("dbtable", "retailer_invites")
-      //.option("aws_iam_role", "arn:aws:iam::067811574341:role/redshift-s3-fullaccess")
-      .option("aws_iam_role", "")
+      //.option("aws_iam_role", "")
+      .option("forward_spark_s3_credentials", true)
       .option("tempdir", tempS3Dir)
       .load()
 
@@ -105,14 +105,14 @@ object MainSparkStreaming {
       //Insert continuous streams into hive table
       //spark.sql("insert into table retailer_invites_hive_table select * from retailer_invites_messages")
       //spark.sql("insert into table retailer_invites(retailernumber, retailer_type, msisdn, requested_package, invitedon, status, invite_type) select * from retailer_invites_messages")
-      /*spark.sql("INSERT INTO retailer_invites(retailernumber, retailer_type, msisdn, requested_package, invitedon, status, invite_type)\nVALUES ('8801709496187', 'MassRetail', '8801785230660', 'TonicBasic', '2017-05-13 23:31:58', 'Pending', 'ADD_MEMBER')")
+      spark.sql("INSERT INTO table retailer_invites(retailernumber, retailer_type, msisdn, requested_package, invitedon, status, invite_type) VALUES ('8801709496187', 'MassRetail', '8801785230660', 'TonicBasic', '2017-05-13 23:31:58', 'Pending', 'ADD_MEMBER')")
         .write.format("com.databricks.spark.redshift")
         .option("url", jdbcURL)
         .option("tempdir", tempS3Dir)
         .option("dbtable", "retailer_invites")
         .option("aws_iam_role", "arn:aws:iam::067811574341:role/redshift-s3-fullaccess")
-        .mode("error")
-        .save()*/
+        .mode(SaveMode.Append)
+        .save()
 
       // select the parsed messages from table using SQL and print it (since it runs on drive display few records)
       val messagesqueryDataFrame = spark.sql("select * from retailer_invites_messages")
