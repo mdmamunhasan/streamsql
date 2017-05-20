@@ -29,7 +29,7 @@ object MainSparkStreaming {
     val Array(brokers, topics, redshifthost, database, db_user, db_password) = args
 
     val jdbcURL = "jdbc:redshift://"+redshifthost+"/"+database+"?user="+db_user+"&password="+db_password
-    val tempS3Dir = "s3://redshift-temp-spark/data"
+    val tempS3Dir = "s3n://redshift-temp-spark/data"
 
     val sparkConf = new SparkConf().setAppName("DirectKafkaActivities")
     // Create context with 10 second batch interval
@@ -56,11 +56,18 @@ object MainSparkStreaming {
       //.enableHiveSupport()
       .getOrCreate()
 
+    //spark.conf.set("fs.s3n.awsAccessKeyId", "AKIAJFDJF2NLFLHTWFPA")
+    //spark.conf.set("fs.s3n.awsSecretAccessKey", "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")
+
+    //spark.sparkContext.hadoopConfiguration.set("fs.s3n.awsAccessKeyId", "AKIAJFDJF2NLFLHTWFPA")
+    //spark.sparkContext.hadoopConfiguration.set("fs.s3n.awsSecretAccessKey", "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")
+
     val eventsDF = spark.read
       .format("com.databricks.spark.redshift")
       .option("url", jdbcURL)
       .option("tempdir", tempS3Dir)
       .option("dbtable", "retailer_invites")
+      .option("aws_iam_role", "arn:aws:iam::067811574341:role/s3access")
       .load()
 
     eventsDF.show()
@@ -99,6 +106,7 @@ object MainSparkStreaming {
         .option("url", jdbcURL)
         .option("tempdir", tempS3Dir)
         .option("dbtable", "retailer_invites")
+        .option("aws_iam_role", "arn:aws:iam::067811574341:role/s3access")
         .mode(SaveMode.Overwrite)
         .save()
 
