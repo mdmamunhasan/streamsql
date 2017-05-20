@@ -51,23 +51,27 @@ object MainSparkStreaming {
     val spark = SparkSession
       .builder
       .config(sparkConf)
-      //.config("spark.sql.warehouse.dir", warehouseLocation)
+      .config("spark.sql.warehouse.dir", warehouseLocation)
       //.enableHiveSupport()
       .getOrCreate()
 
-    //spark.conf.set("fs.s3n.awsAccessKeyId", "AKIAJFDJF2NLFLHTWFPA")
-    //spark.conf.set("fs.s3n.awsSecretAccessKey", "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")
+    //spark.conf.set("fs.s3.awsAccessKeyId", "AKIAIGK6SZDTNZVH3KEA")
+    //spark.conf.set("fs.s3.awsSecretAccessKey", "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")
 
-    //spark.sparkContext.hadoopConfiguration.set("fs.s3n.awsAccessKeyId", "AKIAJFDJF2NLFLHTWFPA")
-    //spark.sparkContext.hadoopConfiguration.set("fs.s3n.awsSecretAccessKey", "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")
+    //spark.sparkContext.hadoopConfiguration.set("fs.s3.impl", "org.apache.hadoop.fs.s3native.NativeS3FileSystem")
+    //spark.sparkContext.hadoopConfiguration.set("fs.s3.awsAccessKeyId", "AKIAJFDJF2NLFLHTWFPA")
+    //spark.sparkContext.hadoopConfiguration.set("fs.s3.awsSecretAccessKey", "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")
 
     val eventsDF = spark.read
       .format("com.databricks.spark.redshift")
+      .option("temporary_aws_access_key_id", "")
+      .option("temporary_aws_secret_access_key", "")
+      .option("temporary_aws_session_token", "")
       .option("url", jdbcURL)
-      .option("tempdir", tempS3Dir)
       .option("dbtable", "retailer_invites")
       //.option("aws_iam_role", "arn:aws:iam::067811574341:role/redshift-s3-fullaccess")
-      .option("aws_iam_role", "arn:aws:iam::067811574341:role/s3access")
+      .option("aws_iam_role", "")
+      .option("tempdir", tempS3Dir)
       .load()
 
     eventsDF.show()
