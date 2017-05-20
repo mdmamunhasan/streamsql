@@ -55,8 +55,8 @@ object MainSparkStreaming {
       //.enableHiveSupport()
       .getOrCreate()
 
-    //spark.conf.set("fs.s3.awsAccessKeyId", "AKIAIGK6SZDTNZVH3KEA")
-    //spark.conf.set("fs.s3.awsSecretAccessKey", "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")
+    //spark.conf.set("fs.s3.awsAccessKeyId", sys.env("AWS_ACCESS_KEY_ID"))
+    //spark.conf.set("fs.s3.awsSecretAccessKey", sys.env("AWS_SECRET_ACCESS_KEY")
 
     spark.sparkContext.hadoopConfiguration.set("fs.s3.impl", "org.apache.hadoop.fs.s3native.NativeS3FileSystem")
     spark.sparkContext.hadoopConfiguration.set("fs.s3.awsAccessKeyId", sys.env("AWS_ACCESS_KEY_ID"))
