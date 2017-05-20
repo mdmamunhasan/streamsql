@@ -123,14 +123,14 @@ object MainSparkStreaming {
         .mode(SaveMode.Append)
         .save()*/
 
-      val retailerDF = spark.sql("INSERT INTO table retailer_invites(retailernumber, retailer_type, msisdn, requested_package, invitedon, status, invite_type) VALUES ('8801709496187', 'MassRetail', '8801785230660', 'TonicBasic', '2017-05-13 23:31:58', 'Pending', 'ADD_MEMBER')")
+      /*val retailerDF = spark.sql("INSERT INTO retailer_invites(retailernumber, retailer_type, msisdn, requested_package, invitedon, status, invite_type) VALUES ('8801709496187', 'MassRetail', '8801785230660', 'TonicBasic', '2017-05-13 23:31:58', 'Pending', 'ADD_MEMBER')")
         .write.format("jdbc")
         .option("url", "jdbc:postgresql://"+redshifthost+"/"+database)
         .option("dbtable", "retailer_invites")
         .option("user", db_user)
         .option("password", db_password)
         .option("driver", "org.postgresql.Driver")
-        .save()
+        .save()*/
 
       // select the parsed messages from table using SQL and print it (since it runs on drive display few records)
       //val messagesqueryDataFrame = spark.sql("select * from retailer_invites_messages")
