@@ -14,18 +14,19 @@ object MainSparkStreaming {
 
   def main(args: Array[String]) {
 
-    if (args.length < 4) {
+    if (args.length < 3) {
       System.err.println(
         s"""
            |Usage: MainSparkStreaming <brokers> <topics>
            |  <brokers> is a list of one or more Kafka brokers
            |  <topics> is a list of one or more kafka topics to consume from
            |  <jdbcURL> jdbc:redshift://redshifthost:5439/database?user=username&password=pass
-           |  <tempS3Dir> s3n://path/for/temp/data
            |
         """.stripMargin)
       System.exit(1)
     }
+
+    val tempS3Dir = "s3n://redshift-temp-spark/data"
 
     val Array(brokers, topics, jdbcURL, tempS3Dir) = args
 
