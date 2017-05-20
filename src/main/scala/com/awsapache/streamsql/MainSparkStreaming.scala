@@ -55,14 +55,14 @@ object MainSparkStreaming {
       //.enableHiveSupport()
       .getOrCreate()
 
-    //spark.conf.set("fs.s3.awsAccessKeyId", sys.env("AWS_ACCESS_KEY_ID"))
-    //spark.conf.set("fs.s3.awsSecretAccessKey", sys.env("AWS_SECRET_ACCESS_KEY")
+    //spark.conf.set("fs.s3.awsAccessKeyId", "AKIAIGK6SZDTNZVH3KEA")
+    //spark.conf.set("fs.s3.awsSecretAccessKey", "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")
 
-    spark.sparkContext.hadoopConfiguration.set("fs.s3.impl", "org.apache.hadoop.fs.s3native.NativeS3FileSystem")
-    spark.sparkContext.hadoopConfiguration.set("fs.s3.awsAccessKeyId", sys.env("AWS_ACCESS_KEY_ID"))
-    spark.sparkContext.hadoopConfiguration.set("fs.s3.awsSecretAccessKey", sys.env("AWS_SECRET_ACCESS_KEY"))
+    /*spark.sparkContext.hadoopConfiguration.set("fs.s3.impl", "org.apache.hadoop.fs.s3native.NativeS3FileSystem")
+    spark.sparkContext.hadoopConfiguration.set("fs.s3.awsAccessKeyId","AKIAIGK6SZDTNZVH3KEA")
+    spark.sparkContext.hadoopConfiguration.set("fs.s3.awsSecretAccessKey", "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")
 
-    val eventsDF = spark.read
+    val retailerDF = spark.read
       .format("com.databricks.spark.redshift")
       //.option("temporary_aws_access_key_id", "")
       //.option("temporary_aws_secret_access_key", "")
@@ -72,10 +72,19 @@ object MainSparkStreaming {
       //.option("aws_iam_role", sys.env("AWS_IAM_ROLE"))
       .option("forward_spark_s3_credentials", true)
       .option("tempdir", tempS3Dir)
+      .load()*/
+
+    val retailerDF = spark.read
+      .format("jdbc")
+      .option("url", "jdbc:postgresql://"+redshifthost+"/"+database)
+      .option("dbtable", "retailer_invites")
+      .option("user", db_user)
+      .option("password", db_password)
+      .option("driver", "org.postgresql.Driver")
       .load()
 
-    eventsDF.show()
-    eventsDF.printSchema()
+    retailerDF.show()
+    retailerDF.printSchema()
 
     // Drop the tables if it already exists 
     //spark.sql("DROP TABLE IF EXISTS retailer_invites_hive_table")
@@ -94,30 +103,39 @@ object MainSparkStreaming {
       //messagesDataFrame.collect().foreach(println)
 
       // Creates a retailer DataFrame
-      val retailerDataFrame = messagesDataFrame.filter(_ ("table") == "retailer_invites")
+      /*val retailerDataFrame = messagesDataFrame.filter(_ ("table") == "retailer_invites")
         .filter(_ ("operation") == "Insert").map(m => m("data").asInstanceOf[Map[String, String]])
         .map(w => RetailerRecord(w("retailernumber"), w("retailer_type"), w("msisdn"), w("requested_package"), w("invitedon"), w("status"), w("invite_type")))
-        .toDF()
+        .toDF()*/
 
       // Creates a temporary view using the DataFrame
-      retailerDataFrame.createOrReplaceTempView("retailer_invites_messages")
+      //retailerDataFrame.createOrReplaceTempView("retailer_invites_messages")
 
       //Insert continuous streams into hive table
       //spark.sql("insert into table retailer_invites_hive_table select * from retailer_invites_messages")
       //spark.sql("insert into table retailer_invites(retailernumber, retailer_type, msisdn, requested_package, invitedon, status, invite_type) select * from retailer_invites_messages")
-      spark.sql("INSERT INTO table retailer_invites(retailernumber, retailer_type, msisdn, requested_package, invitedon, status, invite_type) VALUES ('8801709496187', 'MassRetail', '8801785230660', 'TonicBasic', '2017-05-13 23:31:58', 'Pending', 'ADD_MEMBER')")
+      /*spark.sql("INSERT INTO table retailer_invites(retailernumber, retailer_type, msisdn, requested_package, invitedon, status, invite_type) VALUES ('8801709496187', 'MassRetail', '8801785230660', 'TonicBasic', '2017-05-13 23:31:58', 'Pending', 'ADD_MEMBER')")
         .write.format("com.databricks.spark.redshift")
         .option("url", jdbcURL)
         .option("tempdir", tempS3Dir)
         .option("dbtable", "retailer_invites")
         .option("aws_iam_role", "arn:aws:iam::067811574341:role/redshift-s3-fullaccess")
         .mode(SaveMode.Append)
+        .save()*/
+
+      val retailerDF = spark.sql("INSERT INTO table retailer_invites(retailernumber, retailer_type, msisdn, requested_package, invitedon, status, invite_type) VALUES ('8801709496187', 'MassRetail', '8801785230660', 'TonicBasic', '2017-05-13 23:31:58', 'Pending', 'ADD_MEMBER')")
+        .write.format("jdbc")
+        .option("url", "jdbc:postgresql://"+redshifthost+"/"+database)
+        .option("dbtable", "retailer_invites")
+        .option("user", db_user)
+        .option("password", db_password)
+        .option("driver", "org.postgresql.Driver")
         .save()
 
       // select the parsed messages from table using SQL and print it (since it runs on drive display few records)
-      val messagesqueryDataFrame = spark.sql("select * from retailer_invites_messages")
+      //val messagesqueryDataFrame = spark.sql("select * from retailer_invites_messages")
       println(s"========= $time =========")
-      messagesqueryDataFrame.show()
+      //messagesqueryDataFrame.show()
     }
 
     // Start the computation

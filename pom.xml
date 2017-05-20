@@ -114,6 +114,24 @@
             <artifactId>spark-redshift_2.11</artifactId>
             <version>3.0.0-preview1</version>
         </dependency>
+
+        <!--<dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-redshift</artifactId>
+            <version>1.11.132</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.amazon</groupId>
+            <artifactId>redshift-jdbc41</artifactId>
+            <version>1.1.9.1009</version>
+        </dependency>-->
+
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>9.4.1212</version>
+        </dependency>
     </dependencies>
 
     <build>
