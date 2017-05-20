@@ -3,10 +3,10 @@ package com.awsapache.streamsql
 import kafka.serializer.StringDecoder
 import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.SQLContext
+import org.apache.spark.sql.{SaveMode, SparkSession}
 import org.apache.spark.streaming.kafka._
 import org.apache.spark.streaming.{Seconds, StreamingContext, Time}
+
 import scala.util.parsing.json._
 
 
@@ -14,18 +14,20 @@ object MainSparkStreaming {
 
   def main(args: Array[String]) {
 
-    if (args.length < 2) {
+    if (args.length < 4) {
       System.err.println(
         s"""
            |Usage: MainSparkStreaming <brokers> <topics>
            |  <brokers> is a list of one or more Kafka brokers
            |  <topics> is a list of one or more kafka topics to consume from
+           |  <jdbcURL> jdbc:redshift://redshifthost:5439/database?user=username&password=pass
+           |  <tempS3Dir> s3n://path/for/temp/data
            |
         """.stripMargin)
       System.exit(1)
     }
 
-    val Array(brokers, topics) = args
+    val Array(brokers, topics, jdbcURL, tempS3Dir) = args
 
     val sparkConf = new SparkConf().setAppName("DirectKafkaActivities")
     // Create context with 10 second batch interval
@@ -48,15 +50,25 @@ object MainSparkStreaming {
     val spark = SparkSession
       .builder
       .config(sparkConf)
-      .config("spark.sql.warehouse.dir", warehouseLocation)
-      .enableHiveSupport()
+      //.config("spark.sql.warehouse.dir", warehouseLocation)
+      //.enableHiveSupport()
       .getOrCreate()
 
+    val eventsDF = spark.read
+      .format("com.databricks.spark.redshift")
+      .option("url", jdbcURL)
+      .option("tempdir", tempS3Dir)
+      .option("dbtable", "retailer_invites")
+      .load()
+
+    eventsDF.show()
+    eventsDF.printSchema()
+
     // Drop the tables if it already exists 
-    spark.sql("DROP TABLE IF EXISTS retailer_invites_hive_table")
+    //spark.sql("DROP TABLE IF EXISTS retailer_invites_hive_table")
 
     // Create the tables to store your streams 
-    spark.sql("CREATE TABLE retailer_invites_hive_table ( retailernumber string, retailer_type string, msisdn string, requested_package string, invitedon string, status string, invite_type string ) STORED AS TEXTFILE")
+    //spark.sql("CREATE TABLE retailer_invites_hive_table ( retailernumber string, retailer_type string, msisdn string, requested_package string, invitedon string, status string, invite_type string ) STORED AS TEXTFILE")
     // Convert RDDs of the lines DStream to DataFrame and run SQL query
     lines.foreachRDD { (rdd: RDD[String], time: Time) =>
 
@@ -78,7 +90,15 @@ object MainSparkStreaming {
       retailerDataFrame.createOrReplaceTempView("retailer_invites_messages")
 
       //Insert continuous streams into hive table
-      spark.sql("insert into table retailer_invites_hive_table select * from retailer_invites_messages")
+      //spark.sql("insert into table retailer_invites_hive_table select * from retailer_invites_messages")
+      //spark.sql("insert into table retailer_invites(retailernumber, retailer_type, msisdn, requested_package, invitedon, status, invite_type) select * from retailer_invites_messages")
+      spark.sql("insert into table retailer_invites(retailernumber, retailer_type, msisdn, requested_package, invitedon, status, invite_type) select * from retailer_invites_messages")
+        .write.format("com.databricks.spark.redshift")
+        .option("url", jdbcURL)
+        .option("tempdir", tempS3Dir)
+        .option("dbtable", "retailer_invites")
+        .mode(SaveMode.Overwrite)
+        .save()
 
       // select the parsed messages from table using SQL and print it (since it runs on drive display few records)
       val messagesqueryDataFrame = spark.sql("select * from retailer_invites_messages")
