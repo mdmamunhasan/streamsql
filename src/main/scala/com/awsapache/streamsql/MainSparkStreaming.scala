@@ -29,7 +29,7 @@ object MainSparkStreaming {
     val Array(brokers, topics, redshifthost, database, db_user, db_password) = args
 
     val jdbcURL = "jdbc:redshift://"+redshifthost+"/"+database+"?user="+db_user+"&password="+db_password
-    val tempS3Dir = "s3n://redshift-temp-spark/data/"
+    val tempS3Dir = "s3://redshift-temp-spark/*"
 
     val sparkConf = new SparkConf().setAppName("DirectKafkaActivities")
     // Create context with 10 second batch interval
@@ -62,16 +62,17 @@ object MainSparkStreaming {
     //spark.sparkContext.hadoopConfiguration.set("fs.s3n.awsAccessKeyId", "AKIAJFDJF2NLFLHTWFPA")
     //spark.sparkContext.hadoopConfiguration.set("fs.s3n.awsSecretAccessKey", "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")
 
-    /*val eventsDF = spark.read
+    val eventsDF = spark.read
       .format("com.databricks.spark.redshift")
       .option("url", jdbcURL)
       .option("tempdir", tempS3Dir)
       .option("dbtable", "retailer_invites")
-      .option("aws_iam_role", "arn:aws:iam::067811574341:role/s3access")
+      .option("aws_iam_role", "arn:aws:iam::067811574341:role/redshift-s3-fullaccess")
+      //.option("aws_iam_role", "arn:aws:iam::067811574341:role/s3access")
       .load()
 
     eventsDF.show()
-    eventsDF.printSchema()*/
+    eventsDF.printSchema()
 
     // Drop the tables if it already exists 
     //spark.sql("DROP TABLE IF EXISTS retailer_invites_hive_table")
@@ -101,14 +102,14 @@ object MainSparkStreaming {
       //Insert continuous streams into hive table
       //spark.sql("insert into table retailer_invites_hive_table select * from retailer_invites_messages")
       //spark.sql("insert into table retailer_invites(retailernumber, retailer_type, msisdn, requested_package, invitedon, status, invite_type) select * from retailer_invites_messages")
-      spark.sql("insert into table retailer_invites(retailernumber, retailer_type, msisdn, requested_package, invitedon, status, invite_type) select * from retailer_invites_messages")
+      /*spark.sql("INSERT INTO retailer_invites(retailernumber, retailer_type, msisdn, requested_package, invitedon, status, invite_type)\nVALUES ('8801709496187', 'MassRetail', '8801785230660', 'TonicBasic', '2017-05-13 23:31:58', 'Pending', 'ADD_MEMBER')")
         .write.format("com.databricks.spark.redshift")
         .option("url", jdbcURL)
         .option("tempdir", tempS3Dir)
         .option("dbtable", "retailer_invites")
         .option("aws_iam_role", "arn:aws:iam::067811574341:role/redshift-s3-fullaccess")
         .mode("error")
-        .save()
+        .save()*/
 
       // select the parsed messages from table using SQL and print it (since it runs on drive display few records)
       val messagesqueryDataFrame = spark.sql("select * from retailer_invites_messages")
