@@ -13,13 +13,12 @@ object MainSparkStreaming {
 
   def main(args: Array[String]) {
 
-    if (args.length < 6) {
+    if (args.length < 2) {
       System.err.println(
         s"""
            |Usage: MainSparkStreaming <brokers> <topics>
            |  <brokers> is a list of one or more Kafka brokers
            |  <topics> is a list of one or more kafka topics to consume from
-           |  <jdbcURL> jdbc:redshift://redshifthost:5439/database?user=username&password=pass
            |
         """.stripMargin)
       System.exit(1)
