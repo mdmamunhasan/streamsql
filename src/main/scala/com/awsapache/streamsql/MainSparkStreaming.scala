@@ -7,8 +7,6 @@ localhost:9092 topictest host:port database user password
 */
 
 package com.awsapache.streamsql
-
-
 import kafka.serializer.StringDecoder
 import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
@@ -94,7 +92,7 @@ object MainSparkStreaming {
     val retailerDF = spark.read
       .format("jdbc")
       .option("url", "jdbc:postgresql://" + redshifthost + "/" + database)
-      .option("dbtable", "retailer_invites")
+      .option("dbtable", "public.retailer_invites")
       .option("user", db_user)
       .option("password", db_password)
       .option("driver", "org.postgresql.Driver")
@@ -130,10 +128,9 @@ object MainSparkStreaming {
       retailerDataFrame.createOrReplaceTempView("retailer_invites_messages")
 
       //Insert continuous streams into hive table
-      val dummy_data = "insert into table retailer_invites(retailernumber, retailer_type, msisdn, requested_package, invitedon, status, invite_type) VALUES ('8801709496187', 'MassRetail', '8801785230660', 'TonicBasic', '2017-05-13 23:31:58', 'Pending', 'ADD_MEMBER')"
 
-      /*spark.sql("insert into table retailer_invites select * from retailer_invites_messages")
-        .write.format("com.databricks.spark.redshift")
+      /*retailerQueryDataFrame.write.format("com.databricks.spark.redshift")
+        .withColumn("invitedon", $"invitedon".cast("timestamp"))
         .option("temporary_aws_access_key_id", awsSecretKey)
         .option("temporary_aws_secret_access_key", awsAccessKey)
         .option("temporary_aws_session_token", token)
@@ -143,25 +140,28 @@ object MainSparkStreaming {
         .mode(SaveMode.Append)
         .save()*/
 
-      spark.sql("insert into table retailer_invites_hive_table select * from retailer_invites_messages")
+      retailerDataFrame
+        .withColumn("invitedon", $"invitedon".cast("timestamp"))
         .write.format("jdbc")
         .option("url", "jdbc:postgresql://"+redshifthost+"/"+database)
-        .option("dbtable", "retailer_invites")
+        .option("dbtable", "public.retailer_invites")
         .option("user", db_user)
         .option("password", db_password)
         .option("driver", "org.postgresql.Driver")
+        .mode(SaveMode.Append)
         .save()
 
       // select the parsed messages from table using SQL and print it (since it runs on drive display few records)
-      val messagesqueryDataFrame = spark.sql("select * from retailer_invites_messages")
+      val retailerQueryDataFrame = spark.sql("select * from retailer_invites_messages")
+
       println(s"========= $time =========")
-      messagesqueryDataFrame.show()
+      retailerQueryDataFrame.show()
+
     }
 
     // Start the computation
     ssc.start()
     ssc.awaitTermination()
-
   }
 }
 
