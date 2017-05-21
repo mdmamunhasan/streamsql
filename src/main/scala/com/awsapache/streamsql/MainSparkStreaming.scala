@@ -1,3 +1,11 @@
+/*
+Command for execution
+/usr/local/spark/bin/spark-submit --verbose --master local --class \
+com.awsapache.streamsql.MainSparkStreaming \
+target/streamsql-0.0.1-SNAPSHOT-jar-with-dependencies.jar \
+localhost:9092 topictest host:port database user password
+*/
+
 package com.awsapache.streamsql
 
 
@@ -27,7 +35,10 @@ object MainSparkStreaming {
            |Usage: MainSparkStreaming <brokers> <topics>
            |  <brokers> is a list of one or more Kafka brokers
            |  <topics> is a list of one or more kafka topics to consume from
-           |  <jdbcURL> jdbc:redshift://redshifthost:5439/database?user=username&password=pass
+           |  <redshifthost> host:port
+           |  <database> database name
+           |  <db_user> databse username
+           |  <db_password> database password
            |
         """.stripMargin)
       System.exit(1)
@@ -35,7 +46,7 @@ object MainSparkStreaming {
 
     val Array(brokers, topics, redshifthost, database, db_user, db_password) = args
 
-    val jdbcURL = "jdbc:redshift://"+redshifthost+"/"+database+"?user="+db_user+"&password="+db_password
+    val jdbcURL = "jdbc:redshift://" + redshifthost + "/" + database + "?user=" + db_user + "&password=" + db_password
     val tempS3Dir = "s3://redshift-temp-spark/data"
 
     val sparkConf = new SparkConf().setAppName("DirectKafkaActivities")
@@ -60,7 +71,7 @@ object MainSparkStreaming {
       .builder
       .config(sparkConf)
       .config("spark.sql.warehouse.dir", warehouseLocation)
-      //.enableHiveSupport()
+      .enableHiveSupport()
       .getOrCreate()
 
     val provider = new InstanceProfileCredentialsProvider(false)
@@ -76,7 +87,7 @@ object MainSparkStreaming {
       .option("temporary_aws_session_token", token)
       .option("url", jdbcURL)
       .option("dbtable", "retailer_invites")
-      //.option("aws_iam_role", sys.env("AWS_IAM_ROLE"))
+      .option("aws_iam_role", sys.env("AWS_IAM_ROLE"))
       .option("forward_spark_s3_credentials", true)
       .option("tempdir", tempS3Dir)
       .load()
