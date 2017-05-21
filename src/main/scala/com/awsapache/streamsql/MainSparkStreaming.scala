@@ -88,7 +88,7 @@ object MainSparkStreaming {
       .option("url", jdbcURL)
       .option("dbtable", "retailer_invites")
       .option("aws_iam_role", sys.env("AWS_IAM_ROLE"))
-      .option("forward_spark_s3_credentials", true)
+      //.option("forward_spark_s3_credentials", true)
       .option("tempdir", tempS3Dir)
       .load()
 
@@ -134,10 +134,12 @@ object MainSparkStreaming {
       //spark.sql("insert into table retailer_invites(retailernumber, retailer_type, msisdn, requested_package, invitedon, status, invite_type) select * from retailer_invites_messages")
       /*spark.sql("INSERT INTO table retailer_invites(retailernumber, retailer_type, msisdn, requested_package, invitedon, status, invite_type) VALUES ('8801709496187', 'MassRetail', '8801785230660', 'TonicBasic', '2017-05-13 23:31:58', 'Pending', 'ADD_MEMBER')")
         .write.format("com.databricks.spark.redshift")
+        .option("temporary_aws_access_key_id", awsSecretKey)
+        .option("temporary_aws_secret_access_key", awsAccessKey)
+        .option("temporary_aws_session_token", token)
         .option("url", jdbcURL)
-        .option("tempdir", tempS3Dir)
         .option("dbtable", "retailer_invites")
-        .option("aws_iam_role", "arn:aws:iam::067811574341:role/redshift-s3-fullaccess")
+        .option("aws_iam_role", sys.env("AWS_IAM_ROLE"))
         .mode(SaveMode.Append)
         .save()*/
 
