@@ -1,11 +1,19 @@
 package com.awsapache.streamsql
 
+
 import kafka.serializer.StringDecoder
 import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.{SaveMode, SparkSession}
 import org.apache.spark.streaming.kafka._
 import org.apache.spark.streaming.{Seconds, StreamingContext, Time}
+import com.amazonaws.auth._
+import com.amazonaws.auth.AWSCredentialsProvider
+import com.amazonaws.auth.AWSSessionCredentials
+import com.amazonaws.auth.InstanceProfileCredentialsProvider
+import com.amazonaws.services.redshift.AmazonRedshiftClient
+import com.amazon.redshift.jdbc41.Driver
+
 import scala.util.parsing.json._
 
 
@@ -28,7 +36,7 @@ object MainSparkStreaming {
     val Array(brokers, topics, redshifthost, database, db_user, db_password) = args
 
     val jdbcURL = "jdbc:redshift://"+redshifthost+"/"+database+"?user="+db_user+"&password="+db_password
-    val tempS3Dir = "s3://redshift-temp-spark/*"
+    val tempS3Dir = "s3://redshift-temp-spark/data"
 
     val sparkConf = new SparkConf().setAppName("DirectKafkaActivities")
     // Create context with 10 second batch interval
@@ -55,33 +63,32 @@ object MainSparkStreaming {
       //.enableHiveSupport()
       .getOrCreate()
 
-    //spark.conf.set("fs.s3.awsAccessKeyId", "AKIAIGK6SZDTNZVH3KEA")
-    //spark.conf.set("fs.s3.awsSecretAccessKey", "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")
-
-    /*spark.sparkContext.hadoopConfiguration.set("fs.s3.impl", "org.apache.hadoop.fs.s3native.NativeS3FileSystem")
-    spark.sparkContext.hadoopConfiguration.set("fs.s3.awsAccessKeyId","AKIAIGK6SZDTNZVH3KEA")
-    spark.sparkContext.hadoopConfiguration.set("fs.s3.awsSecretAccessKey", "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")
+    val provider = new InstanceProfileCredentialsProvider(false)
+    val credentials: AWSSessionCredentials = provider.getCredentials.asInstanceOf[AWSSessionCredentials]
+    val token = credentials.getSessionToken
+    val awsAccessKey = credentials.getAWSAccessKeyId
+    val awsSecretKey = credentials.getAWSSecretKey
 
     val retailerDF = spark.read
       .format("com.databricks.spark.redshift")
-      //.option("temporary_aws_access_key_id", "")
-      //.option("temporary_aws_secret_access_key", "")
-      //.option("temporary_aws_session_token", "")
+      .option("temporary_aws_access_key_id", awsSecretKey)
+      .option("temporary_aws_secret_access_key", awsAccessKey)
+      .option("temporary_aws_session_token", token)
       .option("url", jdbcURL)
       .option("dbtable", "retailer_invites")
       //.option("aws_iam_role", sys.env("AWS_IAM_ROLE"))
       .option("forward_spark_s3_credentials", true)
       .option("tempdir", tempS3Dir)
-      .load()*/
+      .load()
 
-    val retailerDF = spark.read
+    /*val retailerDF = spark.read
       .format("jdbc")
       .option("url", "jdbc:postgresql://"+redshifthost+"/"+database)
       .option("dbtable", "retailer_invites")
       .option("user", db_user)
       .option("password", db_password)
       .option("driver", "org.postgresql.Driver")
-      .load()
+      .load()*/
 
     retailerDF.show()
     retailerDF.printSchema()

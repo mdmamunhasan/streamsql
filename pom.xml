@@ -80,17 +80,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.databricks</groupId>
-            <artifactId>spark-csv_${scala.tools.version}</artifactId>
-            <version>1.4.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.amazonaws</groupId>
-            <artifactId>aws-java-sdk-s3</artifactId>
-            <version>1.11.131</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka_2.11</artifactId>
             <version>0.8.2.1</version>
@@ -109,29 +98,45 @@
             <scope>test</scope>
         </dependency>
 
+
+        <dependency>
+            <groupId>com.databricks</groupId>
+            <artifactId>spark-csv_${scala.tools.version}</artifactId>
+            <version>1.4.0</version>
+        </dependency>
         <dependency>
             <groupId>com.databricks</groupId>
             <artifactId>spark-redshift_2.11</artifactId>
             <version>3.0.0-preview1</version>
         </dependency>
-
         <!--<dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk</artifactId>
+            <version>1.11.132</version>
+        </dependency>-->
+        <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-redshift</artifactId>
             <version>1.11.132</version>
         </dependency>
-
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-s3</artifactId>
+            <version>1.11.131</version>
+        </dependency>
         <dependency>
             <groupId>com.amazon</groupId>
-            <artifactId>redshift-jdbc41</artifactId>
-            <version>1.1.9.1009</version>
-        </dependency>-->
-
+            <artifactId>redshift.jdbc41</artifactId>
+            <version>1.1.17.1017</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/src/main/resources/RedshiftJDBC41-1.2.1.1001.jar</systemPath>
+        </dependency>
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <version>9.4.1212</version>
         </dependency>
+
     </dependencies>
 
     <build>
