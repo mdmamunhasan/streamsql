@@ -104,10 +104,11 @@ object MainSparkStreaming {
     retailerDF.printSchema()
 
     // Drop the tables if it already exists 
-    //spark.sql("DROP TABLE IF EXISTS retailer_invites_hive_table")
+    //spark.sql("DROP TABLE IF EXISTS retailer_invites")
 
     // Create the tables to store your streams 
-    //spark.sql("CREATE TABLE retailer_invites_hive_table ( retailernumber string, retailer_type string, msisdn string, requested_package string, invitedon string, status string, invite_type string ) STORED AS TEXTFILE")
+    //spark.sql("CREATE TABLE retailer_invites ( retailernumber string, retailer_type string, msisdn string, requested_package string, invitedon string, status string, invite_type string ) STORED AS TEXTFILE")
+
     // Convert RDDs of the lines DStream to DataFrame and run SQL query
     lines.foreachRDD { (rdd: RDD[String], time: Time) =>
 
@@ -142,7 +143,7 @@ object MainSparkStreaming {
         .mode(SaveMode.Append)
         .save()*/
 
-      spark.sql("insert into table retailer_invites select * from retailer_invites_messages")
+      spark.sql("insert into table retailer_invites_hive_table select * from retailer_invites_messages")
         .write.format("jdbc")
         .option("url", "jdbc:postgresql://"+redshifthost+"/"+database)
         .option("dbtable", "retailer_invites")
