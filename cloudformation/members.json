@@ -1,18 +1,4 @@
-{
-  "table": "members",
-  "operation": "update",
-  "data": {
-    "status": "ReSubscribed",
-    "membership_type": "TonicBasic",
-    "details": {
-      "channel": "USSD",
-      "joined_on": "2017-05-13 23:07:17",
-      "more_info": {},
-      "unsubscribed_on": "2017-05-13 23:06:27"
-    }
-  },
-  "application": "core.db"
-}
+{"table":"members","operation":"Insert","data":{"status":"Joined","membership_no":"T-1703112321-1","membership_type":"TonicBasic","details":{"channel":"USSD","joined_on":"2017-05-13 23:07:17","more_info":{},"subscribed_on":"2017-05-13 23:06:27"}},"application":"core.db"}
 
 
 

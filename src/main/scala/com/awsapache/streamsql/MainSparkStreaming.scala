@@ -118,6 +118,16 @@ object MainSparkStreaming {
       val messagesDataFrame = rdd.map(json => JSON.parseFull(json).get.asInstanceOf[Map[String, Any]])
       //messagesDataFrame.collect().foreach(println)
 
+      val msisdnDataFrame = messagesDataFrame.filter(_ ("table") == "msisdn")
+        .filter(_ ("operation") == "Insert").map(m => m("data").asInstanceOf[Map[String, String]])
+        .map(w => MsisdnRecord(w("membership_no"), w("msisdn")))
+        .toDF()
+
+      val memberDataFrame = messagesDataFrame.filter(_ ("table") == "members")
+        .filter(_ ("operation") == "Insert").map(m => m("data").asInstanceOf[Map[String, String]])
+        .map(w => MemberRecord(w("membership_no"), w("status"), w("details"), w("membership_type")))
+        .toDF()
+
       // Creates a retailer DataFrame
       val retailerDataFrame = messagesDataFrame.filter(_ ("table") == "retailer_invites")
         .filter(_ ("operation") == "Insert").map(m => m("data").asInstanceOf[Map[String, String]])
@@ -127,7 +137,27 @@ object MainSparkStreaming {
       // Creates a temporary view using the DataFrame
       retailerDataFrame.createOrReplaceTempView("retailer_invites_messages")
 
-      //Insert continuous streams into hive table
+      //Insert continuous streams into redshift table
+
+      msisdnDataFrame
+        .write.format("jdbc")
+        .option("url", "jdbc:postgresql://"+redshifthost+"/"+database)
+        .option("dbtable", "public.msisdn")
+        .option("user", db_user)
+        .option("password", db_password)
+        .option("driver", "org.postgresql.Driver")
+        .mode(SaveMode.Append)
+        .save()
+
+      memberDataFrame
+        .write.format("jdbc")
+        .option("url", "jdbc:postgresql://"+redshifthost+"/"+database)
+        .option("dbtable", "public.members")
+        .option("user", db_user)
+        .option("password", db_password)
+        .option("driver", "org.postgresql.Driver")
+        .mode(SaveMode.Append)
+        .save()
 
       /*retailerQueryDataFrame.write.format("com.databricks.spark.redshift")
         .withColumn("invitedon", $"invitedon".cast("timestamp"))
@@ -166,4 +196,6 @@ object MainSparkStreaming {
 }
 
 /** Case class for converting RDD to DataFrame */
+case class MsisdnRecord(membership_no: String, msisdn: String)
+case class MemberRecord(membership_no: String, status: String, details: String, membership_type: String)
 case class RetailerRecord(retailernumber: String, retailer_type: String, msisdn: String, requested_package: String, invitedon: String, status: String, invite_type: String)
