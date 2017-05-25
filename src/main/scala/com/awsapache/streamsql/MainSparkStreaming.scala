@@ -7,6 +7,7 @@ localhost:9092 topictest host:port database user password
 */
 
 package com.awsapache.streamsql
+
 import kafka.serializer.StringDecoder
 import org.apache.spark.SparkConf
 import org.apache.spark.rdd.RDD
@@ -115,34 +116,35 @@ object MainSparkStreaming {
 
       //var z:Array[String] = new RDD[Map[String]]
 
-      val messagesDataFrame = rdd.map(json => JSON.parseFull(json).get.asInstanceOf[Map[String, Any]])
-      //messagesDataFrame.collect().foreach(println)
+      val messagesDataFrame = rdd.map(json => JSON.parseFull(json))
+        .filter(_.isDefined)
+        .map(parsed => parsed.get.asInstanceOf[Map[String, Any]])
+      messagesDataFrame.collect().foreach(println)
 
-      val msisdnDataFrame = messagesDataFrame.filter(_ ("table") == "msisdn")
+      // Creates a msisdn DataFrame
+      val msisdnDataFrame = messagesDataFrame.filter(_ exists(_ == ("table","msisdns")))
         .filter(_ ("operation") == "Insert").map(m => m("data").asInstanceOf[Map[String, String]])
         .map(w => MsisdnRecord(w("membership_no"), w("msisdn")))
         .toDF()
 
-      val memberDataFrame = messagesDataFrame.filter(_ ("table") == "members")
-        .filter(_ ("operation") == "Insert").map(m => m("data").asInstanceOf[Map[String, String]])
-        .map(w => MemberRecord(w("membership_no"), w("status"), w("details"), w("membership_type")))
+      // Creates a members DataFrame
+      val memberDataFrame = messagesDataFrame.filter(_ exists(_ == ("table","members")))
+        .filter(_ ("operation") == "Insert").map(m => m("data").asInstanceOf[Map[String, Any]])
+        .map(w => MemberRecord(w("membership_no").toString, w("status").toString, JSONObject(w("details").asInstanceOf[Map[String, Any]]).toString(), w("membership_type").toString))
         .toDF()
 
       // Creates a retailer DataFrame
-      val retailerDataFrame = messagesDataFrame.filter(_ ("table") == "retailer_invites")
+      val retailerDataFrame = messagesDataFrame.filter(_ exists(_ == ("table","retailer_invites")))
         .filter(_ ("operation") == "Insert").map(m => m("data").asInstanceOf[Map[String, String]])
         .map(w => RetailerRecord(w("retailernumber"), w("retailer_type"), w("msisdn"), w("requested_package"), w("invitedon"), w("status"), w("invite_type")))
         .toDF()
-
-      // Creates a temporary view using the DataFrame
-      retailerDataFrame.createOrReplaceTempView("retailer_invites_messages")
 
       //Insert continuous streams into redshift table
 
       msisdnDataFrame
         .write.format("jdbc")
         .option("url", "jdbc:postgresql://"+redshifthost+"/"+database)
-        .option("dbtable", "public.msisdn")
+        .option("dbtable", "public.msisdns")
         .option("user", db_user)
         .option("password", db_password)
         .option("driver", "org.postgresql.Driver")
@@ -159,17 +161,6 @@ object MainSparkStreaming {
         .mode(SaveMode.Append)
         .save()
 
-      /*retailerQueryDataFrame.write.format("com.databricks.spark.redshift")
-        .withColumn("invitedon", $"invitedon".cast("timestamp"))
-        .option("temporary_aws_access_key_id", awsSecretKey)
-        .option("temporary_aws_secret_access_key", awsAccessKey)
-        .option("temporary_aws_session_token", token)
-        .option("url", jdbcURL)
-        .option("dbtable", "retailer_invites")
-        .option("aws_iam_role", sys.env("AWS_IAM_ROLE"))
-        .mode(SaveMode.Append)
-        .save()*/
-
       retailerDataFrame
         .withColumn("invitedon", $"invitedon".cast("timestamp"))
         .write.format("jdbc")
@@ -181,11 +172,30 @@ object MainSparkStreaming {
         .mode(SaveMode.Append)
         .save()
 
-      // select the parsed messages from table using SQL and print it (since it runs on drive display few records)
-      val retailerQueryDataFrame = spark.sql("select * from retailer_invites_messages")
+      /*retailerDataFrame.write.format("com.databricks.spark.redshift")
+        .withColumn("invitedon", $"invitedon".cast("timestamp"))
+        .option("temporary_aws_access_key_id", awsSecretKey)
+        .option("temporary_aws_secret_access_key", awsAccessKey)
+        .option("temporary_aws_session_token", token)
+        .option("url", jdbcURL)
+        .option("dbtable", "retailer_invites")
+        .option("aws_iam_role", sys.env("AWS_IAM_ROLE"))
+        .mode(SaveMode.Append)
+        .save()*/
 
+      if(memberDataFrame.rdd.isEmpty()){
+        // Todo: Create Join
+      }
+
+      // Creates a temporary view using the DataFrame
+      //msisdnDataFrame.createOrReplaceTempView("msisdns_messages")
+      memberDataFrame.createOrReplaceTempView("members_messages")
+      //retailerDataFrame.createOrReplaceTempView("retailer_invites_messages")
+
+      // select the parsed messages from table using SQL and print it (since it runs on drive display few records)
+      val queryDataFrame = spark.sql("select * from members_messages")
       println(s"========= $time =========")
-      retailerQueryDataFrame.show()
+      queryDataFrame.show()
 
     }
 
