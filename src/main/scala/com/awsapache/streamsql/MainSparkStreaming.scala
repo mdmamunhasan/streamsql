@@ -121,16 +121,16 @@ object MainSparkStreaming {
         .map(parsed => parsed.get.asInstanceOf[Map[String, Any]])
       messagesDataFrame.collect().foreach(println)
 
-      // Creates a msisdn DataFrame
-      val msisdnDataFrame = messagesDataFrame.filter(_ exists(_ == ("table","msisdns")))
-        .filter(_ ("operation") == "Insert").map(m => m("data").asInstanceOf[Map[String, String]])
-        .map(w => MsisdnRecord(w("membership_no"), w("msisdn")))
-        .toDF()
-
       // Creates a members DataFrame
       val memberDataFrame = messagesDataFrame.filter(_ exists(_ == ("table","members")))
         .filter(_ ("operation") == "Insert").map(m => m("data").asInstanceOf[Map[String, Any]])
         .map(w => MemberRecord(w("membership_no").toString, w("status").toString, JSONObject(w("details").asInstanceOf[Map[String, Any]]).toString(), w("membership_type").toString))
+        .toDF()
+
+      // Creates a msisdn DataFrame
+      val msisdnDataFrame = messagesDataFrame.filter(_ exists(_ == ("table","msisdns")))
+        .filter(_ ("operation") == "Insert").map(m => m("data").asInstanceOf[Map[String, String]])
+        .map(w => MsisdnRecord(w("membership_no"), w("msisdn")))
         .toDF()
 
       // Creates a retailer DataFrame
@@ -141,20 +141,20 @@ object MainSparkStreaming {
 
       //Insert continuous streams into redshift table
 
-      msisdnDataFrame
+      memberDataFrame
         .write.format("jdbc")
         .option("url", "jdbc:postgresql://"+redshifthost+"/"+database)
-        .option("dbtable", "public.msisdns")
+        .option("dbtable", "public.members")
         .option("user", db_user)
         .option("password", db_password)
         .option("driver", "org.postgresql.Driver")
         .mode(SaveMode.Append)
         .save()
 
-      memberDataFrame
+      msisdnDataFrame
         .write.format("jdbc")
         .option("url", "jdbc:postgresql://"+redshifthost+"/"+database)
-        .option("dbtable", "public.members")
+        .option("dbtable", "public.msisdns")
         .option("user", db_user)
         .option("password", db_password)
         .option("driver", "org.postgresql.Driver")
@@ -183,19 +183,16 @@ object MainSparkStreaming {
         .mode(SaveMode.Append)
         .save()*/
 
-      if(memberDataFrame.rdd.isEmpty()){
-        // Todo: Create Join
+      if(!memberDataFrame.rdd.isEmpty()){
+        // Creates a temporary view using the DataFrame
+        memberDataFrame.createOrReplaceTempView("members_messages")
+
+        // select the parsed messages from table using SQL and print it (since it runs on drive display few records)
+        val queryDataFrame = spark.sql("select * from members_messages")
+        queryDataFrame.show()
       }
 
-      // Creates a temporary view using the DataFrame
-      //msisdnDataFrame.createOrReplaceTempView("msisdns_messages")
-      memberDataFrame.createOrReplaceTempView("members_messages")
-      //retailerDataFrame.createOrReplaceTempView("retailer_invites_messages")
-
-      // select the parsed messages from table using SQL and print it (since it runs on drive display few records)
-      val queryDataFrame = spark.sql("select * from members_messages")
       println(s"========= $time =========")
-      queryDataFrame.show()
 
     }
 
