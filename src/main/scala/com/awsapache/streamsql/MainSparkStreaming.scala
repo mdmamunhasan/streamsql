@@ -161,10 +161,21 @@ object MainSparkStreaming {
 
       if (!memberDataFrame.rdd.isEmpty()) {
 
+        val membersQuery =
+          """SELECT
+            |  membership_no,
+            |  membership_type,
+            |  status
+            |FROM
+            |  members
+            |WHERE
+            |  status != 'Cancelled'"""
+
         val memberDF = spark.read
           .format("jdbc")
           .option("url", "jdbc:postgresql://" + redshifthost + "/" + database)
           .option("dbtable", "public.members")
+          .option("query", membersQuery)
           .option("user", db_user)
           .option("password", db_password)
           .option("driver", "org.postgresql.Driver")
@@ -212,27 +223,31 @@ object MainSparkStreaming {
           .drop(memberDF("membership_no"))
           .join(retailerDF, msisdnDF("msisdn") === retailerDF("msisdn"))
           .drop(retailerDF("msisdn"))
-          .withColumn("member_msisdn", $"msisdn")
+          .withColumnRenamed("msisdn", "member_msisdn")
           .drop(retailerDF("status"))
           .select("membership_no", "membership_type", "member_msisdn", "status", "retailer_type", "retailernumber")
 
-        tonicPlusDF.show()
-        tonicPlusDF.printSchema()
-        tonicPlusDF.write.format("jdbc")
-          .option("url", "jdbc:postgresql://" + redshifthost + "/" + database)
-          .option("dbtable", "public.tonic_plus_members_details_last14_days")
-          .option("user", db_user)
-          .option("password", db_password)
-          .option("driver", "org.postgresql.Driver")
-          .mode(SaveMode.Overwrite)
-          .save()
+        if (!tonicPlusDF.rdd.isEmpty()) {
 
-        // Creates a temporary view using the DataFrame
-        //tonicPlusDF.createOrReplaceTempView("tonic_plus_messages")
+          tonicPlusDF.show()
+          tonicPlusDF.printSchema()
+          tonicPlusDF.write.format("jdbc")
+            .option("url", "jdbc:postgresql://" + redshifthost + "/" + database)
+            .option("dbtable", "public.tonic_plus_members_details_last14_days")
+            .option("user", db_user)
+            .option("password", db_password)
+            .option("driver", "org.postgresql.Driver")
+            .mode(SaveMode.Overwrite)
+            .save()
 
-        // select the parsed messages from table using SQL and print it (since it runs on drive display few records)
-        //val queryDataFrame = spark.sql("select * from tonic_plus_messages")
-        //queryDataFrame.show()
+          // Creates a temporary view using the DataFrame
+          //tonicPlusDF.createOrReplaceTempView("tonic_plus_messages")
+
+          // select the parsed messages from table using SQL and print it (since it runs on drive display few records)
+          //val queryDataFrame = spark.sql("select * from tonic_plus_messages")
+          //queryDataFrame.show()
+
+        }
 
       }
 
