@@ -76,31 +76,7 @@ object MainSparkStreaming {
     val credentials: AWSSessionCredentials = provider.getCredentials.asInstanceOf[AWSSessionCredentials]
     val token = credentials.getSessionToken
     val awsAccessKey = credentials.getAWSAccessKeyId
-    val awsSecretKey = credentials.getAWSSecretKey
-
-    val retailerDF = spark.read
-      .format("com.databricks.spark.redshift")
-      .option("temporary_aws_access_key_id", awsSecretKey)
-      .option("temporary_aws_secret_access_key", awsAccessKey)
-      .option("temporary_aws_session_token", token)
-      .option("url", jdbcURL)
-      .option("dbtable", "retailer_invites")
-      .option("aws_iam_role", sys.env("AWS_IAM_ROLE"))
-      //.option("forward_spark_s3_credentials", true)
-      .option("tempdir", tempS3Dir)
-      .load()*/
-
-    val retailerDF = spark.read
-      .format("jdbc")
-      .option("url", "jdbc:postgresql://" + redshifthost + "/" + database)
-      .option("dbtable", "public.retailer_invites")
-      .option("user", db_user)
-      .option("password", db_password)
-      .option("driver", "org.postgresql.Driver")
-      .load()
-
-    retailerDF.show()
-    retailerDF.printSchema()
+    val awsSecretKey = credentials.getAWSSecretKey*/
 
     // Drop the tables if it already exists 
     //spark.sql("DROP TABLE IF EXISTS retailer_invites")
@@ -122,19 +98,19 @@ object MainSparkStreaming {
       messagesDataFrame.collect().foreach(println)
 
       // Creates a members DataFrame
-      val memberDataFrame = messagesDataFrame.filter(_ exists(_ == ("table","members")))
+      val memberDataFrame = messagesDataFrame.filter(_ exists (_ == ("table", "members")))
         .filter(_ ("operation") == "Insert").map(m => m("data").asInstanceOf[Map[String, Any]])
         .map(w => MemberRecord(w("membership_no").toString, w("status").toString, JSONObject(w("details").asInstanceOf[Map[String, Any]]).toString(), w("membership_type").toString))
         .toDF()
 
       // Creates a msisdn DataFrame
-      val msisdnDataFrame = messagesDataFrame.filter(_ exists(_ == ("table","msisdns")))
+      val msisdnDataFrame = messagesDataFrame.filter(_ exists (_ == ("table", "msisdns")))
         .filter(_ ("operation") == "Insert").map(m => m("data").asInstanceOf[Map[String, String]])
         .map(w => MsisdnRecord(w("membership_no"), w("msisdn")))
         .toDF()
 
       // Creates a retailer DataFrame
-      val retailerDataFrame = messagesDataFrame.filter(_ exists(_ == ("table","retailer_invites")))
+      val retailerDataFrame = messagesDataFrame.filter(_ exists (_ == ("table", "retailer_invites")))
         .filter(_ ("operation") == "Insert").map(m => m("data").asInstanceOf[Map[String, String]])
         .map(w => RetailerRecord(w("retailernumber"), w("retailer_type"), w("msisdn"), w("requested_package"), w("invitedon"), w("status"), w("invite_type")))
         .toDF()
@@ -143,7 +119,7 @@ object MainSparkStreaming {
 
       memberDataFrame
         .write.format("jdbc")
-        .option("url", "jdbc:postgresql://"+redshifthost+"/"+database)
+        .option("url", "jdbc:postgresql://" + redshifthost + "/" + database)
         .option("dbtable", "public.members")
         .option("user", db_user)
         .option("password", db_password)
@@ -153,7 +129,7 @@ object MainSparkStreaming {
 
       msisdnDataFrame
         .write.format("jdbc")
-        .option("url", "jdbc:postgresql://"+redshifthost+"/"+database)
+        .option("url", "jdbc:postgresql://" + redshifthost + "/" + database)
         .option("dbtable", "public.msisdns")
         .option("user", db_user)
         .option("password", db_password)
@@ -164,7 +140,7 @@ object MainSparkStreaming {
       retailerDataFrame
         .withColumn("invitedon", $"invitedon".cast("timestamp"))
         .write.format("jdbc")
-        .option("url", "jdbc:postgresql://"+redshifthost+"/"+database)
+        .option("url", "jdbc:postgresql://" + redshifthost + "/" + database)
         .option("dbtable", "public.retailer_invites")
         .option("user", db_user)
         .option("password", db_password)
@@ -183,13 +159,81 @@ object MainSparkStreaming {
         .mode(SaveMode.Append)
         .save()*/
 
-      if(!memberDataFrame.rdd.isEmpty()){
+      if (!memberDataFrame.rdd.isEmpty()) {
+
+        val memberDF = spark.read
+          .format("jdbc")
+          .option("url", "jdbc:postgresql://" + redshifthost + "/" + database)
+          .option("dbtable", "public.members")
+          .option("user", db_user)
+          .option("password", db_password)
+          .option("driver", "org.postgresql.Driver")
+          .load()
         // Creates a temporary view using the DataFrame
-        memberDataFrame.createOrReplaceTempView("members_messages")
+        memberDF.createOrReplaceTempView("memberDF")
+
+        val msisdnDF = spark.read
+          .format("jdbc")
+          .option("url", "jdbc:postgresql://" + redshifthost + "/" + database)
+          .option("dbtable", "public.msisdns")
+          .option("user", db_user)
+          .option("password", db_password)
+          .option("driver", "org.postgresql.Driver")
+          .load()
+        // Creates a temporary view using the DataFrame
+        msisdnDF.createOrReplaceTempView("msisdnDF")
+
+        /*val retailerDF = spark.read
+        .format("com.databricks.spark.redshift")
+        .option("temporary_aws_access_key_id", awsSecretKey)
+        .option("temporary_aws_secret_access_key", awsAccessKey)
+        .option("temporary_aws_session_token", token)
+        .option("url", jdbcURL)
+        .option("dbtable", "retailer_invites")
+        .option("aws_iam_role", sys.env("AWS_IAM_ROLE"))
+        //.option("forward_spark_s3_credentials", true)
+        .option("tempdir", tempS3Dir)
+        .load()*/
+
+        val retailerDF = spark.read
+          .format("jdbc")
+          .option("url", "jdbc:postgresql://" + redshifthost + "/" + database)
+          .option("dbtable", "public.retailer_invites")
+          .option("user", db_user)
+          .option("password", db_password)
+          .option("driver", "org.postgresql.Driver")
+          .load()
+        // Creates a temporary view using the DataFrame
+        retailerDF.createOrReplaceTempView("retailerDF")
+
+
+        val tonicPlusDF = memberDF
+          .join(msisdnDF, memberDF("membership_no") === msisdnDF("membership_no"))
+          .drop(memberDF("membership_no"))
+          .join(retailerDF, msisdnDF("msisdn") === retailerDF("msisdn"))
+          .drop(retailerDF("msisdn"))
+          .withColumn("member_msisdn", $"msisdn")
+          .drop(retailerDF("status"))
+          .select("membership_no", "membership_type", "member_msisdn", "status", "retailer_type", "retailernumber")
+
+        tonicPlusDF.show()
+        tonicPlusDF.printSchema()
+        tonicPlusDF.write.format("jdbc")
+          .option("url", "jdbc:postgresql://" + redshifthost + "/" + database)
+          .option("dbtable", "public.tonic_plus_members_details_last14_days")
+          .option("user", db_user)
+          .option("password", db_password)
+          .option("driver", "org.postgresql.Driver")
+          .mode(SaveMode.Overwrite)
+          .save()
+
+        // Creates a temporary view using the DataFrame
+        //tonicPlusDF.createOrReplaceTempView("tonic_plus_messages")
 
         // select the parsed messages from table using SQL and print it (since it runs on drive display few records)
-        val queryDataFrame = spark.sql("select * from members_messages")
-        queryDataFrame.show()
+        //val queryDataFrame = spark.sql("select * from tonic_plus_messages")
+        //queryDataFrame.show()
+
       }
 
       println(s"========= $time =========")
@@ -204,5 +248,9 @@ object MainSparkStreaming {
 
 /** Case class for converting RDD to DataFrame */
 case class MsisdnRecord(membership_no: String, msisdn: String)
+
 case class MemberRecord(membership_no: String, status: String, details: String, membership_type: String)
+
 case class RetailerRecord(retailernumber: String, retailer_type: String, msisdn: String, requested_package: String, invitedon: String, status: String, invite_type: String)
+
+case class TonicPlusRecord(membership_no: String, membership_type: String, member_msisdn: String, status: String, retailer_type: String, retailernumber: String)
